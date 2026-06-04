@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Frozen Paper — Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:ital,wght@0,200;0,300;0,400;0,500;0,600;0,700;1,200;1,300&family=Barlow+Condensed:wght@200;300;400;500;600;700&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#060606;--fg:#f0ede6;--muted:#4a4845;--muted2:#6a6762;
+  --line:rgba(240,237,230,0.08);--line2:rgba(240,237,230,0.15);
+  --sans:'Barlow',sans-serif;--cond:'Barlow Condensed',sans-serif;--mono:'DM Mono',monospace;
+}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:15px;line-height:1.6;overflow-x:hidden;cursor:none}
+#bg-canvas{position:fixed;inset:0;z-index:0;pointer-events:none}
+body::after{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");pointer-events:none;z-index:9998}
+.cursor-dot{width:6px;height:6px;background:var(--fg);border-radius:50%;position:fixed;pointer-events:none;z-index:10000;transform:translate(-50%,-50%);mix-blend-mode:difference}
+.cursor-ring{width:36px;height:36px;border:1px solid rgba(240,237,230,0.5);border-radius:50%;position:fixed;pointer-events:none;z-index:9999;transform:translate(-50%,-50%);transition:width .3s cubic-bezier(.25,.1,.25,1),height .3s,border-color .3s;mix-blend-mode:difference}
+.cursor-ring.big{width:64px;height:64px;border-color:rgba(240,237,230,0.8)}
+nav,section,.marquee-wrap,footer{position:relative;z-index:10}
+nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:28px 56px;transition:background .4s,border-color .4s,padding .4s}
+nav.scrolled{padding:18px 56px;background:rgba(6,6,6,0.88);backdrop-filter:blur(16px);border-bottom:1px solid var(--line)}
+.nav-logo{font-family:var(--cond);font-size:16px;letter-spacing:0.22em;text-transform:uppercase;color:var(--fg);text-decoration:none;display:flex;align-items:center;gap:6px}
+.nav-logo .bold{font-weight:700}.nav-logo .light{font-weight:300}
+.nav-links{display:flex;gap:44px;list-style:none}
+.nav-links a{font-family:var(--mono);font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted2);text-decoration:none;transition:color .2s}
+.nav-links a:hover{color:var(--fg)}
+.cms-link{font-family:var(--mono);font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:rgba(240,237,230,0.2);text-decoration:none;border:1px solid rgba(240,237,230,0.1);padding:6px 12px;transition:all .2s}
+.cms-link:hover{color:var(--fg);border-color:var(--line2)}
+section{padding:130px 56px}.container{max-width:1300px;margin:0 auto}
+#hero{min-height:100vh;display:flex;flex-direction:column;justify-content:flex-end;padding:0 56px 88px;position:relative;overflow:hidden}
+.hero-eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:0.22em;color:var(--muted2);text-transform:uppercase;margin-bottom:36px;display:flex;align-items:center;gap:18px;opacity:0;animation:fadeUp 1s cubic-bezier(.25,.1,.25,1) 0.3s forwards}
+.hero-eyebrow::before{content:'';width:48px;height:1px;background:var(--muted)}
+.hero-headline{font-family:var(--cond);font-size:clamp(80px,11vw,172px);font-weight:700;line-height:0.88;letter-spacing:-0.01em;text-transform:uppercase;margin-bottom:52px;opacity:0;animation:fadeUp 1s cubic-bezier(.25,.1,.25,1) 0.5s forwards}
+.hero-headline .thin{font-weight:200;color:rgba(240,237,230,0.35);display:block;letter-spacing:0.04em}
+.hero-headline .stroke-text{-webkit-text-stroke:1px rgba(240,237,230,0.3);color:transparent;display:block}
+.hero-bottom{display:flex;justify-content:space-between;align-items:flex-end;border-top:1px solid var(--line);padding-top:36px;opacity:0;animation:fadeUp 1s cubic-bezier(.25,.1,.25,1) 0.8s forwards}
+.hero-desc{max-width:340px;font-size:14px;font-weight:300;color:var(--muted2);line-height:1.9}
+.hero-cta{font-family:var(--cond);font-size:13px;font-weight:600;letter-spacing:0.2em;text-transform:uppercase;color:var(--fg);text-decoration:none;border:1px solid var(--line2);padding:14px 32px;transition:background .3s,color .3s}
+.hero-cta:hover{background:var(--fg);color:var(--bg)}
+.marquee-wrap{overflow:hidden;border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:18px 0;background:rgba(240,237,230,0.015)}
+.marquee-track{display:flex;white-space:nowrap;animation:marquee 22s linear infinite}
+.marquee-item{display:inline-flex;align-items:center;gap:36px;padding-right:36px;font-family:var(--cond);font-size:12px;font-weight:500;letter-spacing:0.22em;text-transform:uppercase;color:var(--muted)}
+.marquee-dot{width:3px;height:3px;border-radius:50%;background:var(--muted);flex-shrink:0}
+@keyframes marquee{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:none}}
+.section-label{font-family:var(--mono);font-size:10px;letter-spacing:0.22em;color:var(--muted2);text-transform:uppercase;margin-bottom:28px;display:flex;align-items:center;gap:14px}
+.section-label .num{color:rgba(240,237,230,0.18)}
+#about{border-top:1px solid var(--line)}
+.about-grid{display:grid;grid-template-columns:1fr 1fr;gap:120px;align-items:start}
+.about-headline{font-family:var(--cond);font-size:clamp(42px,5vw,72px);font-weight:700;text-transform:uppercase;line-height:0.95;letter-spacing:0.01em;margin-bottom:48px}
+.about-headline .light{font-weight:200;color:rgba(240,237,230,0.4)}
+.about-body{font-size:14px;font-weight:300;color:var(--muted2);line-height:1.95;margin-bottom:20px}
+.about-stats{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line);border:1px solid var(--line);margin-top:64px}
+.stat{background:var(--bg);padding:32px}
+.stat-num{font-family:var(--cond);font-size:54px;font-weight:700;line-height:1;margin-bottom:6px;letter-spacing:-0.01em}
+.stat-label{font-family:var(--mono);font-size:10px;letter-spacing:0.15em;color:var(--muted2);text-transform:uppercase}
+.services-list{margin-top:80px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;background:var(--line);border:1px solid var(--line)}
+.service-item{background:var(--bg);padding:44px 36px;transition:background .3s}
+.service-item:hover{background:rgba(240,237,230,0.025)}
+.service-num{font-family:var(--mono);font-size:10px;color:rgba(240,237,230,0.18);letter-spacing:0.1em;margin-bottom:28px}
+.service-title{font-family:var(--cond);font-size:26px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:14px;line-height:1.1}
+.service-desc{font-size:13px;font-weight:300;color:var(--muted2);line-height:1.8}
+.service-tags{margin-top:28px;display:flex;flex-wrap:wrap;gap:8px}
+.tag{font-family:var(--mono);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted2);border:1px solid var(--line);padding:4px 10px}
+#work{border-top:1px solid var(--line)}
+.work-header{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:72px}
+.section-headline{font-family:var(--cond);font-size:clamp(44px,5vw,72px);font-weight:700;text-transform:uppercase;line-height:0.92;letter-spacing:0.01em}
+.section-headline .light{font-weight:200;color:rgba(240,237,230,0.4)}
+.view-all{font-family:var(--mono);font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted2);text-decoration:none;display:flex;align-items:center;gap:10px;transition:color .2s}
+.view-all:hover{color:var(--fg)}.view-all::after{content:'→';transition:transform .2s}.view-all:hover::after{transform:translateX(4px)}
+.work-grid{display:grid;gap:2px}
+.work-row{display:grid;grid-template-columns:1fr 1fr;gap:2px}
+.work-row.single{grid-template-columns:1fr}
+.work-item{position:relative;overflow:hidden;background:#111;cursor:none}
+.work-item.tall{aspect-ratio:3/4}.work-item.wide{aspect-ratio:16/9}.work-item.square{aspect-ratio:1}
+.work-placeholder{width:100%;height:100%;display:flex;align-items:center;justify-content:center;position:absolute;inset:0;transition:transform .6s cubic-bezier(.25,.1,.25,1)}
+.work-item:hover .work-placeholder{transform:scale(1.05)}
+.work-overlay{position:absolute;inset:0;background:rgba(6,6,6,0.72);opacity:0;transition:opacity .3s;display:flex;flex-direction:column;justify-content:flex-end;padding:36px}
+.work-item:hover .work-overlay{opacity:1}
+.work-cat{font-family:var(--mono);font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted2);margin-bottom:8px}
+.work-title{font-family:var(--cond);font-size:32px;font-weight:700;text-transform:uppercase;letter-spacing:0.02em;line-height:1.1}
+.work-year{font-family:var(--mono);font-size:11px;color:var(--muted2);margin-top:8px}
+.work-inner-text{font-family:var(--cond);font-size:clamp(20px,3.5vw,40px);font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:rgba(240,237,230,0.06);text-align:center;padding:24px;line-height:1.1}
+.wbg-1{background:#0f0f12}.wbg-2{background:#0d1010}.wbg-3{background:#100d0d}.wbg-4{background:#0d0f0d}.wbg-5{background:#100d10}.wbg-6{background:#0d0d11}.wbg-7{background:#101008}.wbg-8{background:#0d0d10}
+#clients{border-top:1px solid var(--line)}
+.clients-intro{display:grid;grid-template-columns:1fr 1fr;gap:120px;margin-bottom:80px;align-items:end}
+.clients-desc{font-size:14px;font-weight:300;color:var(--muted2);line-height:1.95;margin-top:28px}
+.clients-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border:1px solid var(--line)}
+.client-card{background:var(--bg);padding:40px;transition:background .3s;position:relative;overflow:hidden}
+.client-card:hover{background:rgba(240,237,230,0.025)}
+.client-logo-area{display:flex;align-items:center;margin-bottom:28px;height:48px}
+.client-initial{width:48px;height:48px;border:1px solid var(--line2);display:flex;align-items:center;justify-content:center;font-family:var(--cond);font-size:22px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:var(--fg)}
+.client-name{font-family:var(--cond);font-size:18px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:6px}
+.client-industry{font-family:var(--mono);font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted2);margin-bottom:18px}
+.client-work{font-size:13px;font-weight:300;color:var(--muted2);line-height:1.75}
+.client-year{position:absolute;top:24px;right:24px;font-family:var(--mono);font-size:10px;color:rgba(240,237,230,0.18);letter-spacing:0.1em}
+.testimonials{margin-top:80px}
+.testimonial-row{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line);border:1px solid var(--line)}
+.testimonial{background:var(--bg);padding:48px 44px;transition:background .3s}
+.testimonial:hover{background:rgba(240,237,230,0.025)}
+.quote-mark{font-family:var(--cond);font-size:100px;font-weight:700;line-height:0.7;color:rgba(240,237,230,0.06);margin-bottom:20px;display:block}
+.quote-text{font-family:var(--sans);font-size:18px;font-weight:300;font-style:italic;line-height:1.7;color:rgba(240,237,230,0.75);margin-bottom:32px}
+.quote-author{display:flex;flex-direction:column;gap:4px;border-top:1px solid var(--line);padding-top:24px}
+.author-name{font-family:var(--cond);font-size:15px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase}
+.author-role{font-family:var(--mono);font-size:10px;letter-spacing:0.12em;color:var(--muted2);text-transform:uppercase}
+#contact{border-top:1px solid var(--line)}
+.contact-grid{display:grid;grid-template-columns:1fr 1fr;gap:120px;align-items:start}
+.contact-cta{font-family:var(--cond);font-size:clamp(36px,4vw,60px);font-weight:700;text-transform:uppercase;line-height:0.95;letter-spacing:0.02em;margin-top:28px;margin-bottom:48px}
+.contact-cta .light{font-weight:200;color:rgba(240,237,230,0.4)}
+.contact-email{font-family:var(--cond);font-size:22px;font-weight:500;letter-spacing:0.06em;color:var(--fg);text-decoration:none;display:flex;align-items:center;gap:14px;transition:gap .3s}
+.contact-email:hover{gap:22px}.contact-email::after{content:'↗';font-family:sans-serif;font-size:18px}
+.contact-form{display:flex;flex-direction:column}
+.form-group{display:flex;flex-direction:column;gap:8px;border-bottom:1px solid var(--line);padding:22px 0}
+.form-label{font-family:var(--mono);font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:var(--muted2)}
+.form-input{background:transparent;border:none;color:var(--fg);font-family:var(--sans);font-weight:300;font-size:15px;padding:4px 0;outline:none;width:100%}
+.form-input::placeholder{color:rgba(240,237,230,0.18)}
+textarea.form-input{resize:none;min-height:80px}
+.form-submit{margin-top:40px;background:var(--fg);color:var(--bg);border:none;padding:18px 52px;font-family:var(--cond);font-size:13px;font-weight:700;letter-spacing:0.25em;text-transform:uppercase;cursor:none;transition:opacity .2s,transform .2s;align-self:flex-start}
+.form-submit:hover{opacity:0.88;transform:translateY(-2px)}
+footer{border-top:1px solid var(--line);padding:40px 56px;display:flex;justify-content:space-between;align-items:center}
+.footer-logo{font-family:var(--cond);font-size:15px;letter-spacing:0.2em;text-transform:uppercase}
+.footer-logo .bold{font-weight:700}.footer-logo .light{font-weight:300}
+.footer-copy{font-family:var(--mono);font-size:10px;letter-spacing:0.1em;color:var(--muted)}
+.footer-links{display:flex;gap:32px;list-style:none}
+.footer-links a{font-family:var(--mono);font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted2);text-decoration:none;transition:color .2s}
+.footer-links a:hover{color:var(--fg)}
+.reveal{opacity:0;transform:translateY(28px);transition:opacity .75s cubic-bezier(.25,.1,.25,1),transform .75s cubic-bezier(.25,.1,.25,1)}
+.reveal.visible{opacity:1;transform:none}
+.reveal-delay-1{transition-delay:0.1s}.reveal-delay-2{transition-delay:0.2s}.reveal-delay-3{transition-delay:0.35s}
+@media(max-width:900px){
+  section{padding:80px 24px}nav{padding:18px 24px}nav.scrolled{padding:14px 24px}
+  .about-grid,.contact-grid,.clients-intro{grid-template-columns:1fr;gap:48px}
+  .services-list{grid-template-columns:1fr}.clients-grid{grid-template-columns:1fr 1fr}
+  .testimonial-row{grid-template-columns:1fr}.work-row{grid-template-columns:1fr}
+  footer{flex-direction:column;gap:20px;text-align:center}.nav-links{display:none}
+  #hero{padding:0 24px 64px}
+}
+</style>
+</head>
+<body>
+<canvas id="bg-canvas"></canvas>
+<div class="cursor-dot" id="cursor-dot"></div>
+<div class="cursor-ring" id="cursor-ring"></div>
+
+<!-- NAV (rendered by JS) -->
+<nav id="nav">
+  <a href="#" class="nav-logo"><span class="bold">Frozen</span><span class="light">Paper</span></a>
+  <ul class="nav-links">
+    <li><a href="#about">Agency</a></li>
+    <li><a href="#work">Services</a></li>
+    <li><a href="#clients">Clients</a></li>
+    <li><a href="#contact">Contact</a></li>
+    <li><a href="/admin.html" class="cms-link">⚙ CMS</a></li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<section id="hero">
+  <div class="hero-eyebrow" id="hero-eyebrow"></div>
+  <h1 class="hero-headline">
+    <span id="hero-line1"></span>
+    <span class="thin" id="hero-line2"></span>
+    <span class="stroke-text" id="hero-line3"></span>
+  </h1>
+  <div class="hero-bottom">
+    <p class="hero-desc" id="hero-desc"></p>
+    <a id="hero-cta" class="hero-cta" href="#work"></a>
+  </div>
+</section>
+
+<!-- MARQUEE -->
+<div class="marquee-wrap">
+  <div class="marquee-track" id="marquee-track"></div>
+</div>
+
+<!-- ABOUT -->
+<section id="about">
+  <div class="container">
+    <div class="about-grid">
+      <div>
+        <div class="section-label reveal"><span class="num">01</span> Agency</div>
+        <h2 class="about-headline reveal reveal-delay-1">
+          <span id="about-h1"></span><br>
+          <span class="light" id="about-h2"></span><br>
+          <span id="about-h3"></span>
+        </h2>
+        <p class="about-body reveal reveal-delay-2" id="about-p1"></p>
+        <p class="about-body reveal reveal-delay-2" id="about-p2"></p>
+        <div class="services-list reveal reveal-delay-3" id="services-list"></div>
+      </div>
+      <div>
+        <div class="about-stats reveal" id="stats-grid"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- WORK -->
+<section id="work">
+  <div class="container">
+    <div class="work-header">
+      <div>
+        <div class="section-label reveal"><span class="num">02</span> Services</div>
+        <h2 class="section-headline reveal reveal-delay-1">What we<br><span class="light">deliver</span></h2>
+      </div>
+      <a href="#" class="view-all reveal">All work</a>
+    </div>
+    <div class="work-grid reveal" id="work-grid"></div>
+  </div>
+</section>
+
+<!-- CLIENTS -->
+<section id="clients">
+  <div class="container">
+    <div class="clients-intro">
+      <div>
+        <div class="section-label reveal"><span class="num">03</span> Clients</div>
+        <h2 class="section-headline reveal reveal-delay-1">Partners<br><span class="light">we have grown</span></h2>
+        <p class="clients-desc reveal reveal-delay-2">We partner with brands across industries to deliver measurable digital growth. Every engagement is built on strategy, data, and creative excellence.</p>
+      </div>
+      <div></div>
+    </div>
+    <div class="clients-grid reveal" id="clients-grid"></div>
+    <div class="testimonials reveal">
+      <div class="testimonial-row" id="testimonials-row"></div>
+    </div>
+  </div>
+</section>
+
+<!-- CONTACT -->
+<section id="contact">
+  <div class="container">
+    <div class="contact-grid">
+      <div>
+        <div class="section-label reveal"><span class="num">04</span> Contact</div>
+        <h2 class="contact-cta reveal reveal-delay-1">
+          <span id="contact-h1"></span><br>
+          <span id="contact-h2"></span><br>
+          <span class="light" id="contact-h3"></span>
+        </h2>
+        <a id="contact-email" class="contact-email reveal reveal-delay-2" href="#"></a>
+        <div style="margin-top:60px;display:flex;flex-direction:column;gap:10px" class="reveal reveal-delay-3">
+          <div style="font-family:var(--mono);font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:var(--muted2)">Based In</div>
+          <div style="font-family:var(--cond);font-size:22px;font-weight:500;letter-spacing:0.04em;line-height:1.3" id="contact-loc"></div>
+        </div>
+        <div style="margin-top:40px;display:flex;gap:28px" class="reveal" id="contact-socials"></div>
+      </div>
+      <div class="contact-form reveal reveal-delay-2">
+        <div class="form-group"><label class="form-label">Your Name</label><input type="text" class="form-input" placeholder="Full name"></div>
+        <div class="form-group"><label class="form-label">Email Address</label><input type="email" class="form-input" placeholder="you@company.com"></div>
+        <div class="form-group"><label class="form-label">Company</label><input type="text" class="form-input" placeholder="Your company or project"></div>
+        <div class="form-group"><label class="form-label">Type of Work</label><input type="text" class="form-input" placeholder="Brand identity, digital, packaging..."></div>
+        <div class="form-group"><label class="form-label">Brief</label><textarea class="form-input" placeholder="Tell us about your project..."></textarea></div>
+        <button class="form-submit">Send Inquiry →</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-logo"><span class="bold">Frozen</span> <span class="light">Paper</span></div>
+  <span class="footer-copy" id="footer-copy"></span>
+  <ul class="footer-links">
+    <li><a href="#">Privacy</a></li>
+    <li><a href="#">Terms</a></li>
+    <li><a href="#work">Services</a></li>
+  </ul>
+</footer>
+
+<script>
+// ─── CMS DATA ────────────────────────────────────────────────────────────────
+const DEFAULTS = {
+  hero_line1:'We engineer',hero_line2:'digital success',hero_line3:'that converts.',
+  hero_eyebrow:'Digital Marketing & Content Creation Agency',
+  hero_desc:'Frozen Paper blends data, creativity, and technology to build brands that stand out and scale fast — transforming brands into experiences that convert.',
+  hero_cta:'Explore Our Work',hero_cta_link:'#work',
+  about_h1:'Strategy',about_h2:'meets',about_h3:'creativity.',
+  about_p1:'We are a full-service Digital Marketing & Content Creation Agency. We don\'t just market — we engineer digital success. With a deep understanding of market behavior and digital ecosystems, we craft strategies that don\'t just look good, but perform.',
+  about_p2:'Helping businesses build a powerful online presence, generate qualified leads, increase conversions, and create meaningful brand connections that drive measurable growth.',
+  contact_h1:"Let\'s build",contact_h2:'something',contact_h3:'extraordinary.',
+  contact_email:'hello@frozenpaper.studio',contact_loc1:'Thiruvananthapuram, Kerala',
+  contact_ig:'#',contact_be:'#',contact_li:'#',
+  marquee_items:'Social Media Management, Performance Marketing, SEO & Optimization, CRM & Automation, Website Development, Email & WhatsApp Campaigns, Content Creation, Influencer Marketing, Photoshoots & Videography',
+  seo_title:'Frozen Paper — Digital Marketing & Content Creation Agency',
+  seo_desc:'Frozen Paper is a full-service digital marketing and content creation agency helping businesses build powerful online presence, generate leads, and scale fast.',
+  footer_copy:'© 2025 Frozen Paper. All rights reserved.',
+  stats:[{num:'200+',label:'Campaigns Delivered'},{num:'5yr',label:'Years of Expertise'},{num:'80+',label:'Brands Grown'},{num:'98%',label:'Client Retention'}],
+  services:[
+    {title:'Social Media Management',desc:'Build a strong and consistent brand presence across all platforms with strategy-led content and community management.',tags:'Strategy, Content, Scheduling'},
+    {title:'Performance Marketing',desc:'Data-driven campaigns that maximize ROI and drive measurable, scalable results across all paid channels.',tags:'Paid Ads, ROI, Analytics'},
+    {title:'SEO & Optimization',desc:'Improve visibility, rank higher, and attract organic traffic that converts into real business growth.',tags:'SEO, Technical, Content'},
+    {title:'CRM & Marketing Automation',desc:'Streamline customer journeys with smart automation and personalized experiences that nurture and convert.',tags:'CRM, Automation, Flows'},
+    {title:'Website Development',desc:'Design, develop, and maintain high-performing websites that convert visitors into loyal customers.',tags:'Design, Dev, Conversion'},
+    {title:'Content Creation',desc:'From ideas to execution — content that tells your story, builds trust, and sells your brand across every platform.',tags:'Copy, Design, Video'},
+  ],
+  work:[
+    {title:'Brand Launch Campaign',category:'Performance Marketing',year:'2025',size:'tall'},
+    {title:'Social Media Overhaul',category:'Social Media Management',year:'2025',size:'tall'},
+    {title:'E-Commerce Growth Drive',category:'SEO & Paid Ads',year:'2024',size:'wide'},
+    {title:'Influencer Strategy',category:'Influencer Marketing',year:'2024',size:'square'},
+    {title:'Product Videography',category:'Photoshoots & Videography',year:'2024',size:'square'},
+  ],
+  clients:[
+    {name:'RetailMax',industry:'E-Commerce & Retail',work:'Full performance marketing setup, SEO overhaul, and social media management resulting in 3x lead growth in 6 months.',year:'2025'},
+    {name:'MedCore Clinics',industry:'Healthcare',work:'CRM automation, WhatsApp campaign strategy, and content creation driving a 60% increase in appointment bookings.',year:'2025'},
+    {name:'EduPath',industry:'EdTech',work:'Influencer marketing campaign and content strategy that grew their social following from 2K to 45K in 90 days.',year:'2024'},
+    {name:'LuxeHome',industry:'Interior Design',work:'Brand photoshoots, videography, and Instagram management building a premium digital presence from scratch.',year:'2024'},
+    {name:'FinEdge',industry:'Finance & Fintech',work:'Email, SMS & WhatsApp campaign sequences with market research and lead generation delivering 40% conversion uplift.',year:'2024'},
+    {name:'GreenRoots',industry:'Sustainability & FMCG',work:'End-to-end digital marketing including website development, SEO, and paid ads driving consistent organic growth.',year:'2023'},
+  ],
+  testimonials:[
+    {quote:"Frozen Paper didn't just run our ads — they built us a scalable growth system. Our leads tripled in 3 months and the quality of inquiries improved dramatically.",name:'Arjun Menon',role:'CEO, RetailMax'},
+    {quote:"Their content strategy completely transformed our social presence. From near zero to 45K followers in 90 days — the results speak for themselves.",name:'Priya Nair',role:'Founder, EduPath'},
+  ]
+};
+
+function getData() {
+  const saved = localStorage.getItem('fp_cms_data');
+  return saved ? JSON.parse(saved) : JSON.parse(JSON.stringify(DEFAULTS));
+}
+
+// ─── RENDER ───────────────────────────────────────────────────────────────────
+function render() {
+  const D = getData();
+
+  // SEO
+  document.title = D.seo_title || DEFAULTS.seo_title;
+
+  // Hero
+  document.getElementById('hero-eyebrow').textContent = D.hero_eyebrow;
+  document.getElementById('hero-line1').textContent = D.hero_line1;
+  document.getElementById('hero-line2').textContent = D.hero_line2;
+  document.getElementById('hero-line3').textContent = D.hero_line3;
+  document.getElementById('hero-desc').textContent = D.hero_desc;
+  const cta = document.getElementById('hero-cta');
+  cta.textContent = D.hero_cta;
+  cta.href = D.hero_cta_link || '#work';
+
+  // Marquee
+  const items = (D.marquee_items || '').split(',').map(s => s.trim()).filter(Boolean);
+  const doubled = [...items,...items];
+  document.getElementById('marquee-track').innerHTML = doubled.map(i =>
+    `<div class="marquee-item">${i} <span class="marquee-dot"></span></div>`).join('');
+
+  // About
+  document.getElementById('about-h1').textContent = D.about_h1;
+  document.getElementById('about-h2').textContent = D.about_h2;
+  document.getElementById('about-h3').textContent = D.about_h3;
+  document.getElementById('about-p1').textContent = D.about_p1;
+  document.getElementById('about-p2').textContent = D.about_p2;
+
+  // Services
+  document.getElementById('services-list').innerHTML = (D.services||[]).map((s,i) => `
+    <div class="service-item">
+      <div class="service-num">${String(i+1).padStart(3,'0')}</div>
+      <h3 class="service-title">${s.title}</h3>
+      <p class="service-desc">${s.desc}</p>
+      <div class="service-tags">${(s.tags||'').split(',').map(t=>`<span class="tag">${t.trim()}</span>`).join('')}</div>
+    </div>`).join('');
+
+  // Stats
+  document.getElementById('stats-grid').innerHTML = (D.stats||[]).map(s => `
+    <div class="stat"><div class="stat-num">${s.num}</div><div class="stat-label">${s.label}</div></div>`).join('');
+
+  // Work grid - build rows
+  const works = D.work || [];
+  const bgClasses = ['wbg-1','wbg-2','wbg-3','wbg-4','wbg-5','wbg-6','wbg-7','wbg-8'];
+
+  function workCard(w, idx) {
+    const bg = bgClasses[idx % bgClasses.length];
+    const imgStyle = w.image
+      ? `background-image:url('${w.image}');background-size:cover;background-position:center;`
+      : '';
+    const inner = w.image
+      ? ''
+      : `<div class="work-inner-text">${w.title}</div>`;
+    return `
+      <div class="work-item ${w.size||'square'}">
+        <div class="work-placeholder ${bg}" style="${imgStyle}">${inner}</div>
+        <div class="work-overlay">
+          <div class="work-cat">${w.category}</div>
+          <div class="work-title">${w.title}</div>
+          <div class="work-year">${w.year}</div>
+        </div>
+      </div>`;
+  }
+
+  let workHTML = '';
+  let i = 0;
+  while (i < works.length) {
+    const w = works[i];
+    if (w.size === 'wide') {
+      workHTML += `<div class="work-row single">${workCard(w,i)}</div>`;
+      i++;
+    } else if (i + 1 < works.length && works[i+1].size !== 'wide') {
+      workHTML += `<div class="work-row">${workCard(w,i)}${workCard(works[i+1],i+1)}</div>`;
+      i += 2;
+    } else {
+      workHTML += `<div class="work-row single">${workCard(w,i)}</div>`;
+      i++;
+    }
+  }
+  document.getElementById('work-grid').innerHTML = workHTML;
+
+  // Clients
+  document.getElementById('clients-grid').innerHTML = (D.clients||[]).map(c => `
+    <div class="client-card">
+      <span class="client-year">${c.year}</span>
+      <div class="client-logo-area"><div class="client-initial">${c.name.charAt(0)}</div></div>
+      <div class="client-name">${c.name}</div>
+      <div class="client-industry">${c.industry}</div>
+      <p class="client-work">${c.work}</p>
+    </div>`).join('');
+
+  // Testimonials
+  document.getElementById('testimonials-row').innerHTML = (D.testimonials||[]).map(t => `
+    <div class="testimonial">
+      <span class="quote-mark">"</span>
+      <p class="quote-text">${t.quote}</p>
+      <div class="quote-author"><span class="author-name">${t.name}</span><span class="author-role">${t.role}</span></div>
+    </div>`).join('');
+
+  // Contact
+  document.getElementById('contact-h1').textContent = D.contact_h1;
+  document.getElementById('contact-h2').textContent = D.contact_h2;
+  document.getElementById('contact-h3').textContent = D.contact_h3;
+  const em = document.getElementById('contact-email');
+  em.textContent = D.contact_email;
+  em.href = 'mailto:' + D.contact_email;
+  document.getElementById('contact-loc').innerHTML = D.contact_loc1 + '<br><span style="font-weight:300;color:rgba(240,237,230,0.4)">Available worldwide</span>';
+  const socials = [['Instagram',D.contact_ig],['Behance',D.contact_be],['LinkedIn',D.contact_li]];
+  document.getElementById('contact-socials').innerHTML = socials.map(([name,url]) =>
+    `<a href="${url}" style="font-family:var(--mono);font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted2);text-decoration:none;transition:color .2s" onmouseover="this.style.color='var(--fg)'" onmouseout="this.style.color='var(--muted2)'">${name}</a>`).join('');
+
+  // Footer
+  document.getElementById('footer-copy').textContent = D.footer_copy;
+
+  // Re-bind reveal observer after new elements
+  document.querySelectorAll('.reveal:not(.visible)').forEach(el => revealObs.observe(el));
+  // Re-bind cursor
+  document.querySelectorAll('a,button,.work-item,.client-card,.service-item').forEach(el => {
+    el.addEventListener('mouseenter', () => ring.classList.add('big'));
+    el.addEventListener('mouseleave', () => ring.classList.remove('big'));
+  });
+}
+
+// ─── CURSOR ───────────────────────────────────────────────────────────────────
+const dot = document.getElementById('cursor-dot');
+const ring = document.getElementById('cursor-ring');
+let mx=0,my=0,rx=0,ry=0;
+document.addEventListener('mousemove', e => { mx=e.clientX; my=e.clientY; });
+(function animCursor(){
+  rx+=(mx-rx)*0.12; ry+=(my-ry)*0.12;
+  dot.style.left=mx+'px'; dot.style.top=my+'px';
+  ring.style.left=rx+'px'; ring.style.top=ry+'px';
+  requestAnimationFrame(animCursor);
+})();
+
+// ─── NAV SCROLL ───────────────────────────────────────────────────────────────
+const navEl = document.getElementById('nav');
+window.addEventListener('scroll', () => navEl.classList.toggle('scrolled', window.scrollY > 60));
+
+// ─── REVEAL ───────────────────────────────────────────────────────────────────
+const revealObs = new IntersectionObserver(entries => {
+  entries.forEach(e => { if(e.isIntersecting) e.target.classList.add('visible'); });
+}, {threshold:0.08});
+document.querySelectorAll('.reveal').forEach(el => revealObs.observe(el));
+
+// ─── BG ANIMATION ─────────────────────────────────────────────────────────────
+const canvas = document.getElementById('bg-canvas');
+const ctx = canvas.getContext('2d');
+function resize(){ canvas.width=window.innerWidth; canvas.height=window.innerHeight; }
+resize(); window.addEventListener('resize',resize);
+const LINE_COUNT=28;
+const lines=Array.from({length:LINE_COUNT},()=>({x1:Math.random(),y1:Math.random(),x2:Math.random(),y2:Math.random(),alpha:Math.random()*0.04+0.01,targetAlpha:Math.random()*0.04+0.01,dx1:(Math.random()-.5)*0.0002,dy1:(Math.random()-.5)*0.0002,dx2:(Math.random()-.5)*0.0002,dy2:(Math.random()-.5)*0.0002}));
+const particles=Array.from({length:60},()=>({x:Math.random(),y:Math.random(),r:Math.random()*1.2+0.3,alpha:Math.random()*0.25+0.05,vx:(Math.random()-.5)*0.00008,vy:(Math.random()-.5)*0.00008,pulse:Math.random()*Math.PI*2,pulseSpeed:Math.random()*0.005+0.002}));
+const ORBS=[{x:0.15,y:0.25,r:0.28,alpha:0.022,phase:0},{x:0.82,y:0.65,r:0.22,alpha:0.018,phase:1.5},{x:0.5,y:0.9,r:0.18,alpha:0.014,phase:3.1}];
+let scanY=0;const ghosts=[{text:'FROZEN',x:0.12,y:0.18,alpha:0,size:0.09},{text:'PAPER',x:0.55,y:0.72,alpha:0,size:0.07},{text:'FP',x:0.78,y:0.3,alpha:0,size:0.055}];
+let t=0,ghostsInit=false;
+function draw(){
+  const W=canvas.width,H=canvas.height;
+  ctx.clearRect(0,0,W,H); t++;
+  ORBS.forEach(o=>{o.phase+=0.004;const a=o.alpha*(0.7+0.3*Math.sin(o.phase));const g=ctx.createRadialGradient(o.x*W,o.y*H,0,o.x*W,o.y*H,o.r*W);g.addColorStop(0,`rgba(240,237,230,${a})`);g.addColorStop(1,'rgba(240,237,230,0)');ctx.fillStyle=g;ctx.beginPath();ctx.arc(o.x*W,o.y*H,o.r*W,0,Math.PI*2);ctx.fill()});
+  lines.forEach(l=>{l.x1+=l.dx1;l.y1+=l.dy1;l.x2+=l.dx2;l.y2+=l.dy2;if(l.x1<0||l.x1>1)l.dx1*=-1;if(l.y1<0||l.y1>1)l.dy1*=-1;if(l.x2<0||l.x2>1)l.dx2*=-1;if(l.y2<0||l.y2>1)l.dy2*=-1;l.alpha+=(l.targetAlpha-l.alpha)*0.01;if(Math.abs(l.alpha-l.targetAlpha)<0.001)l.targetAlpha=Math.random()*0.05+0.005;ctx.strokeStyle=`rgba(240,237,230,${l.alpha})`;ctx.lineWidth=0.5;ctx.beginPath();ctx.moveTo(l.x1*W,l.y1*H);ctx.lineTo(l.x2*W,l.y2*H);ctx.stroke()});
+  particles.forEach(p=>{p.x+=p.vx;p.y+=p.vy;if(p.x<0)p.x=1;if(p.x>1)p.x=0;if(p.y<0)p.y=1;if(p.y>1)p.y=0;p.pulse+=p.pulseSpeed;const a=p.alpha*(0.5+0.5*Math.sin(p.pulse));ctx.fillStyle=`rgba(240,237,230,${a})`;ctx.beginPath();ctx.arc(p.x*W,p.y*H,p.r,0,Math.PI*2);ctx.fill()});
+  scanY+=0.00012;if(scanY>1.1)scanY=-0.1;const sy=scanY*H;const sg=ctx.createLinearGradient(0,sy-60,0,sy+60);sg.addColorStop(0,'rgba(240,237,230,0)');sg.addColorStop(0.5,'rgba(240,237,230,0.025)');sg.addColorStop(1,'rgba(240,237,230,0)');ctx.fillStyle=sg;ctx.fillRect(0,sy-60,W,120);
+  if(!ghostsInit&&t>60)ghostsInit=true;
+  if(ghostsInit){const maxA=[0.022,0.018,0.015];ghosts.forEach((g,i)=>{g.alpha+=(maxA[i]-g.alpha)*0.008;const sz=Math.floor(g.size*W);ctx.font=`700 ${sz}px 'Barlow Condensed',sans-serif`;ctx.fillStyle=`rgba(240,237,230,${g.alpha})`;ctx.fillText(g.text,g.x*W,g.y*H)})}
+  const cols=12,rows=8;for(let c=0;c<=cols;c++)for(let r=0;r<=rows;r++){const gx=(c/cols)*W,gy=(r/rows)*H;const p=Math.sin(t*0.012+c*0.4+r*0.6)*0.5+0.5;ctx.fillStyle=`rgba(240,237,230,${0.02*p+0.01})`;ctx.beginPath();ctx.arc(gx,gy,1,0,Math.PI*2);ctx.fill()}
+  requestAnimationFrame(draw);
+}
+draw();
+
+// ─── INIT & LIVE UPDATES ──────────────────────────────────────────────────────
+render();
+
+// Poll for CMS changes (when CMS is open in another tab)
+let lastSaved = localStorage.getItem('fp_cms_data');
+setInterval(() => {
+  const current = localStorage.getItem('fp_cms_data');
+  if (current !== lastSaved) {
+    lastSaved = current;
+    render();
+  }
+}, 800);
+</script>
+</body>
+</html>

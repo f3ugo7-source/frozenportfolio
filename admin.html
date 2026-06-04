@@ -1,0 +1,1114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Frozen Paper — CMS</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600;700&family=Barlow+Condensed:wght@300;400;500;600;700&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0a0a;--surface:#111;--surface2:#181818;--surface3:#1e1e1e;
+  --border:#222;--border2:#2a2a2a;
+  --fg:#f0ede6;--muted:#666;--muted2:#444;
+  --accent:#f0ede6;--green:#2ecc71;--red:#e74c3c;--blue:#3498db;--amber:#f39c12;
+  --sans:'Barlow',sans-serif;--cond:'Barlow Condensed',sans-serif;--mono:'DM Mono',monospace;
+}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:14px;line-height:1.6;min-height:100vh;display:flex;flex-direction:column}
+
+/* TOPBAR */
+.topbar{
+  background:var(--surface);border-bottom:1px solid var(--border);
+  padding:0 32px;height:56px;display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:100;flex-shrink:0;
+}
+.topbar-logo{font-family:var(--cond);font-size:15px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;display:flex;align-items:center;gap:10px}
+.topbar-logo .cms-badge{font-size:9px;font-weight:600;letter-spacing:0.14em;background:var(--fg);color:var(--bg);padding:2px 8px;border-radius:2px;font-family:var(--mono)}
+.topbar-actions{display:flex;align-items:center;gap:12px}
+.btn{font-family:var(--mono);font-size:11px;font-weight:400;letter-spacing:0.12em;text-transform:uppercase;padding:8px 20px;border:1px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;transition:all .2s;border-radius:2px}
+.btn:hover{border-color:var(--fg);color:var(--fg)}
+.btn-primary{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.btn-primary:hover{opacity:0.85;color:var(--bg)}
+.btn-danger{border-color:var(--red);color:var(--red)}
+.btn-danger:hover{background:var(--red);color:#fff}
+.btn-sm{padding:5px 12px;font-size:10px}
+.save-status{font-family:var(--mono);font-size:10px;letter-spacing:0.1em;color:var(--green);opacity:0;transition:opacity .3s}
+.save-status.show{opacity:1}
+
+/* LAYOUT */
+.cms-layout{display:flex;flex:1;overflow:hidden;height:calc(100vh - 56px)}
+
+/* SIDEBAR */
+.sidebar{
+  width:220px;flex-shrink:0;background:var(--surface);
+  border-right:1px solid var(--border);
+  overflow-y:auto;padding:16px 0;
+}
+.sidebar-section{margin-bottom:4px}
+.sidebar-title{font-family:var(--mono);font-size:9px;letter-spacing:0.18em;text-transform:uppercase;color:var(--muted2);padding:8px 20px 4px;margin-top:8px}
+.nav-item{
+  display:flex;align-items:center;gap:10px;
+  padding:9px 20px;cursor:pointer;
+  font-size:13px;font-weight:400;color:var(--muted);
+  transition:all .15s;border-left:2px solid transparent;
+}
+.nav-item:hover{color:var(--fg);background:var(--surface2)}
+.nav-item.active{color:var(--fg);background:var(--surface2);border-left-color:var(--fg)}
+.nav-item .icon{font-size:15px;width:18px;text-align:center;flex-shrink:0}
+.nav-badge{margin-left:auto;font-family:var(--mono);font-size:9px;background:var(--surface3);color:var(--muted);padding:1px 6px;border-radius:10px}
+
+/* MAIN */
+.main{flex:1;overflow-y:auto;background:var(--bg)}
+
+/* PANEL */
+.panel{display:none;padding:32px 40px;max-width:1100px}
+.panel.active{display:block}
+
+.panel-header{margin-bottom:32px;padding-bottom:24px;border-bottom:1px solid var(--border)}
+.panel-title{font-family:var(--cond);font-size:26px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:6px}
+.panel-desc{font-size:13px;color:var(--muted);font-weight:300}
+
+/* FORM */
+.form-section{background:var(--surface);border:1px solid var(--border);border-radius:4px;margin-bottom:20px;overflow:hidden}
+.form-section-header{padding:14px 20px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.form-section-title{font-family:var(--mono);font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted)}
+.form-body{padding:20px}
+.form-row{display:grid;gap:16px;margin-bottom:16px}
+.form-row.cols-2{grid-template-columns:1fr 1fr}
+.form-row.cols-3{grid-template-columns:1fr 1fr 1fr}
+.form-row:last-child{margin-bottom:0}
+.form-group{display:flex;flex-direction:column;gap:6px}
+.form-label{font-family:var(--mono);font-size:9px;letter-spacing:0.16em;text-transform:uppercase;color:var(--muted)}
+.form-input{
+  background:var(--surface3);border:1px solid var(--border);
+  color:var(--fg);font-family:var(--sans);font-size:13px;font-weight:300;
+  padding:9px 12px;outline:none;border-radius:2px;
+  transition:border-color .2s;width:100%;
+}
+.form-input:focus{border-color:rgba(240,237,230,0.35)}
+.form-input::placeholder{color:var(--muted2)}
+textarea.form-input{resize:vertical;min-height:80px;line-height:1.6}
+.form-hint{font-size:11px;color:var(--muted2);font-style:italic;margin-top:2px}
+
+/* CARDS LIST */
+.cards-list{display:flex;flex-direction:column;gap:2px}
+.card-item{
+  background:var(--surface);border:1px solid var(--border);
+  padding:14px 18px;display:flex;align-items:center;gap:14px;
+  border-radius:2px;transition:border-color .2s;
+}
+.card-item:hover{border-color:var(--border2)}
+.card-drag{color:var(--muted2);cursor:grab;font-size:16px;flex-shrink:0}
+.card-num{font-family:var(--mono);font-size:10px;color:var(--muted2);width:24px;flex-shrink:0}
+.card-info{flex:1;min-width:0}
+.card-name{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card-meta{font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:2px}
+.card-actions{display:flex;gap:6px;flex-shrink:0}
+
+/* TOGGLE BUTTONS */
+.toggle-group{display:flex;gap:2px}
+.toggle-btn{font-family:var(--mono);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;padding:6px 14px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;transition:all .15s}
+.toggle-btn.active{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+
+/* COLOR PICKER ROW */
+.color-row{display:flex;gap:8px;align-items:center}
+.color-swatch{width:28px;height:28px;border-radius:2px;border:1px solid var(--border2);cursor:pointer;flex-shrink:0}
+
+/* ADD BUTTON */
+.add-btn{
+  width:100%;padding:12px;border:1px dashed var(--border2);
+  background:transparent;color:var(--muted);font-family:var(--mono);
+  font-size:10px;letter-spacing:0.14em;text-transform:uppercase;
+  cursor:pointer;border-radius:2px;transition:all .2s;margin-top:12px;
+}
+.add-btn:hover{border-color:var(--fg);color:var(--fg)}
+
+/* MODAL */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,0.75);
+  z-index:1000;display:none;align-items:center;justify-content:center;
+  backdrop-filter:blur(4px);
+}
+.modal-overlay.open{display:flex}
+.modal{
+  background:var(--surface);border:1px solid var(--border2);
+  border-radius:4px;width:560px;max-height:90vh;overflow-y:auto;
+}
+.modal-header{padding:20px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.modal-title{font-family:var(--cond);font-size:18px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em}
+.modal-close{background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;line-height:1;padding:4px}
+.modal-close:hover{color:var(--fg)}
+.modal-body{padding:24px}
+.modal-footer{padding:16px 24px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px}
+
+/* PREVIEW BANNER */
+.preview-banner{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:4px;padding:16px 20px;margin-bottom:20px;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.preview-info{font-size:13px;color:var(--muted);font-weight:300}
+.preview-info strong{color:var(--fg);font-weight:500}
+
+/* STAT PILLS */
+.stats-row{display:flex;gap:12px;margin-bottom:24px;flex-wrap:wrap}
+.stat-pill{
+  background:var(--surface);border:1px solid var(--border);
+  padding:10px 16px;border-radius:2px;
+}
+.stat-pill .num{font-family:var(--cond);font-size:22px;font-weight:700;line-height:1}
+.stat-pill .lbl{font-family:var(--mono);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-top:2px}
+
+/* LIVE PREVIEW iframe section */
+.preview-frame-wrap{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:4px;overflow:hidden;
+}
+.preview-frame-bar{
+  padding:10px 16px;background:var(--surface2);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:8px;
+}
+.frame-dot{width:10px;height:10px;border-radius:50%}
+.preview-url{font-family:var(--mono);font-size:11px;color:var(--muted);flex:1;padding:4px 10px;background:var(--surface3);border:1px solid var(--border);border-radius:2px}
+
+@keyframes toastIn {
+  from { opacity:0; transform:translateY(12px); }
+  to   { opacity:1; transform:none; }
+}
+
+/* ─── LOGIN SCREEN ─────────────────────────────────────────── */
+#login-screen {
+  position:fixed;inset:0;z-index:99999;
+  background:#060606;
+  display:flex;align-items:center;justify-content:center;
+  flex-direction:column;
+}
+.login-box {
+  width:100%;max-width:400px;padding:0 24px;
+}
+.login-logo {
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:22px;font-weight:700;letter-spacing:0.22em;
+  text-transform:uppercase;color:#f0ede6;
+  margin-bottom:4px;
+}
+.login-logo span{font-weight:300}
+.login-sub {
+  font-family:'DM Mono',monospace;font-size:10px;
+  letter-spacing:0.18em;text-transform:uppercase;
+  color:#4a4845;margin-bottom:48px;
+}
+.login-title {
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:32px;font-weight:700;text-transform:uppercase;
+  letter-spacing:0.04em;color:#f0ede6;margin-bottom:8px;
+}
+.login-desc {
+  font-family:'DM Mono',monospace;font-size:10px;
+  letter-spacing:0.12em;color:#4a4845;
+  text-transform:uppercase;margin-bottom:36px;
+}
+.login-field {
+  display:flex;flex-direction:column;gap:8px;
+  border-bottom:1px solid rgba(240,237,230,0.08);
+  padding:16px 0;margin-bottom:4px;
+}
+.login-label {
+  font-family:'DM Mono',monospace;font-size:10px;
+  letter-spacing:0.18em;text-transform:uppercase;color:#4a4845;
+}
+.login-input {
+  background:transparent;border:none;
+  color:#f0ede6;font-family:'Barlow',sans-serif;
+  font-size:16px;font-weight:300;padding:4px 0;
+  outline:none;width:100%;letter-spacing:0.04em;
+}
+.login-input::placeholder{color:rgba(240,237,230,0.15)}
+.login-btn {
+  width:100%;margin-top:36px;
+  background:#f0ede6;color:#060606;border:none;
+  padding:16px;font-family:'Barlow Condensed',sans-serif;
+  font-size:14px;font-weight:700;letter-spacing:0.25em;
+  text-transform:uppercase;cursor:pointer;
+  transition:opacity .2s,transform .2s;
+}
+.login-btn:hover{opacity:0.88;transform:translateY(-1px)}
+.login-error {
+  font-family:'DM Mono',monospace;font-size:11px;
+  letter-spacing:0.1em;color:#e74c3c;
+  margin-top:16px;text-align:center;
+  opacity:0;transition:opacity .3s;min-height:20px;
+}
+.login-error.show{opacity:1}
+.login-footer {
+  margin-top:48px;font-family:'DM Mono',monospace;
+  font-size:10px;letter-spacing:0.12em;color:#2a2a2a;
+  text-transform:uppercase;text-align:center;
+}
+.shake {
+  animation: shake 0.4s cubic-bezier(.25,.1,.25,1);
+}
+@keyframes shake {
+  0%,100%{transform:translateX(0)}
+  20%{transform:translateX(-8px)}
+  40%{transform:translateX(8px)}
+  60%{transform:translateX(-5px)}
+  80%{transform:translateX(5px)}
+}
+@keyframes fadeInUp {
+  from{opacity:0;transform:translateY(20px)}
+  to{opacity:1;transform:none}
+}
+.login-box { animation: fadeInUp .6s cubic-bezier(.25,.1,.25,1) forwards; }
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="topbar-logo">
+    <span>Frozen</span>&nbsp;<span style="font-weight:300">Paper</span>
+    <span class="cms-badge">CMS</span>
+  </div>
+  <div class="topbar-actions">
+    <span class="save-status" id="saveStatus">✓ Saved</span>
+    <button class="btn btn-sm" onclick="resetToDefaults()">Reset Defaults</button>
+    <button class="btn btn-primary" onclick="saveAll()" style="font-size:12px;padding:10px 24px;letter-spacing:0.15em">💾 Save Changes</button>
+    <button class="btn btn-sm" onclick="openPreview()" style="border-color:var(--blue);color:var(--blue)">Preview Site →</button>
+  </div>
+</div>
+
+<div class="cms-layout">
+  <!-- SIDEBAR -->
+  <nav class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-title">Content</div>
+      <div class="nav-item active" onclick="showPanel('hero')" id="nav-hero">
+        <span class="icon">◈</span> Hero
+      </div>
+      <div class="nav-item" onclick="showPanel('about')" id="nav-about">
+        <span class="icon">◉</span> About / Studio
+      </div>
+      <div class="nav-item" onclick="showPanel('services')" id="nav-services">
+        <span class="icon">◫</span> Services
+        <span class="nav-badge" id="badge-services">3</span>
+      </div>
+      <div class="nav-item" onclick="showPanel('stats')" id="nav-stats">
+        <span class="icon">◳</span> Stats
+      </div>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-title">Portfolio</div>
+      <div class="nav-item" onclick="showPanel('work')" id="nav-work">
+        <span class="icon">◰</span> Work Projects
+        <span class="nav-badge" id="badge-work">5</span>
+      </div>
+      <div class="nav-item" onclick="showPanel('clients')" id="nav-clients">
+        <span class="icon">◱</span> Clients
+        <span class="nav-badge" id="badge-clients">6</span>
+      </div>
+      <div class="nav-item" onclick="showPanel('testimonials')" id="nav-testimonials">
+        <span class="icon">❝</span> Testimonials
+        <span class="nav-badge" id="badge-testimonials">2</span>
+      </div>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-title">Settings</div>
+      <div class="nav-item" onclick="showPanel('contact')" id="nav-contact">
+        <span class="icon">◎</span> Contact
+      </div>
+      <div class="nav-item" onclick="showPanel('marquee')" id="nav-marquee">
+        <span class="icon">▷</span> Marquee
+      </div>
+      <div class="nav-item" onclick="showPanel('seo')" id="nav-seo">
+        <span class="icon">◇</span> SEO & Meta
+      </div>
+    </div>
+  </nav>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- HERO PANEL -->
+    <div class="panel active" id="panel-hero">
+      <div class="panel-header">
+        <div class="panel-title">Hero Section</div>
+        <div class="panel-desc">Controls the full-screen hero at the top of your portfolio</div>
+      </div>
+      <div class="form-section">
+        <div class="form-section-header"><span class="form-section-title">Headline</span></div>
+        <div class="form-body">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Line 1 (Bold)</label>
+              <input type="text" class="form-input" id="hero_line1" placeholder="We craft">
+              <span class="form-hint">Displayed in bold condensed uppercase</span>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Line 2 (Thin / Faded)</label>
+              <input type="text" class="form-input" id="hero_line2" placeholder="identities">
+              <span class="form-hint">Displayed at reduced opacity</span>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Line 3 (Stroke / Outline)</label>
+              <input type="text" class="form-input" id="hero_line3" placeholder="that endure.">
+              <span class="form-hint">Displayed as outlined text</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="form-section">
+        <div class="form-section-header"><span class="form-section-title">Subtext & CTA</span></div>
+        <div class="form-body">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Eyebrow Text</label>
+              <input type="text" class="form-input" id="hero_eyebrow" placeholder="Creative Studio — Est. 2019">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Description</label>
+              <textarea class="form-input" id="hero_desc" rows="3" placeholder="Frozen Paper is a brand and design studio..."></textarea>
+            </div>
+          </div>
+          <div class="form-row cols-2">
+            <div class="form-group">
+              <label class="form-label">CTA Button Text</label>
+              <input type="text" class="form-input" id="hero_cta" placeholder="View Work">
+            </div>
+            <div class="form-group">
+              <label class="form-label">CTA Button Link</label>
+              <input type="text" class="form-input" id="hero_cta_link" placeholder="#work">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ABOUT PANEL -->
+    <div class="panel" id="panel-about">
+      <div class="panel-header">
+        <div class="panel-title">About / Studio</div>
+        <div class="panel-desc">The studio introduction section</div>
+      </div>
+      <div class="form-section">
+        <div class="form-section-header"><span class="form-section-title">Headline</span></div>
+        <div class="form-body">
+          <div class="form-row cols-3">
+            <div class="form-group">
+              <label class="form-label">Line 1 (Bold)</label>
+              <input type="text" class="form-input" id="about_h1" placeholder="Precision">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Line 2 (Thin)</label>
+              <input type="text" class="form-input" id="about_h2" placeholder="over">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Line 3 (Bold)</label>
+              <input type="text" class="form-input" id="about_h3" placeholder="decoration.">
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="form-section">
+        <div class="form-section-header"><span class="form-section-title">Body Text</span></div>
+        <div class="form-body">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Paragraph 1</label>
+              <textarea class="form-input" id="about_p1" rows="3"></textarea>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Paragraph 2</label>
+              <textarea class="form-input" id="about_p2" rows="3"></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STATS PANEL -->
+    <div class="panel" id="panel-stats">
+      <div class="panel-header">
+        <div class="panel-title">Stats Grid</div>
+        <div class="panel-desc">The 4 numbers shown in the about section</div>
+      </div>
+      <div class="form-section">
+        <div class="form-section-header"><span class="form-section-title">Statistics</span></div>
+        <div class="form-body">
+          <div class="form-row cols-2" id="stats-grid"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SERVICES PANEL -->
+    <div class="panel" id="panel-services">
+      <div class="panel-header">
+        <div class="panel-title">Services</div>
+        <div class="panel-desc">Add, edit or remove service offerings</div>
+      </div>
+      <div class="cards-list" id="services-list"></div>
+      <button class="add-btn" onclick="addService()">+ Add Service</button>
+    </div>
+
+    <!-- WORK PANEL -->
+    <div class="panel" id="panel-work">
+      <div class="panel-header">
+        <div class="panel-title">Work Projects</div>
+        <div class="panel-desc">Manage your portfolio projects</div>
+      </div>
+      <div class="cards-list" id="work-list"></div>
+      <button class="add-btn" onclick="addWork()">+ Add Project</button>
+    </div>
+
+    <!-- CLIENTS PANEL -->
+    <div class="panel" id="panel-clients">
+      <div class="panel-header">
+        <div class="panel-title">Clients</div>
+        <div class="panel-desc">Manage client cards shown in the clients section</div>
+      </div>
+      <div class="cards-list" id="clients-list"></div>
+      <button class="add-btn" onclick="addClient()">+ Add Client</button>
+    </div>
+
+    <!-- TESTIMONIALS PANEL -->
+    <div class="panel" id="panel-testimonials">
+      <div class="panel-header">
+        <div class="panel-title">Testimonials</div>
+        <div class="panel-desc">Client quotes displayed below the client grid</div>
+      </div>
+      <div class="cards-list" id="testimonials-list"></div>
+      <button class="add-btn" onclick="addTestimonial()">+ Add Testimonial</button>
+    </div>
+
+    <!-- CONTACT PANEL -->
+    <div class="panel" id="panel-contact">
+      <div class="panel-header">
+        <div class="panel-title">Contact</div>
+        <div class="panel-desc">Contact section content and location info</div>
+      </div>
+      <div class="form-section">
+        <div class="form-section-header"><span class="form-section-title">CTA Headline</span></div>
+        <div class="form-body">
+          <div class="form-row cols-3">
+            <div class="form-group">
+              <label class="form-label">Line 1</label>
+              <input type="text" class="form-input" id="contact_h1" placeholder="Let's build">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Line 2</label>
+              <input type="text" class="form-input" id="contact_h2" placeholder="something">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Line 3 (Thin)</label>
+              <input type="text" class="form-input" id="contact_h3" placeholder="together.">
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="form-section">
+        <div class="form-section-header"><span class="form-section-title">Contact Details</span></div>
+        <div class="form-body">
+          <div class="form-row cols-2">
+            <div class="form-group">
+              <label class="form-label">Email Address</label>
+              <input type="email" class="form-input" id="contact_email" placeholder="hello@frozenpaper.studio">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Location Line 1</label>
+              <input type="text" class="form-input" id="contact_loc1" placeholder="Thiruvananthapuram, Kerala">
+            </div>
+          </div>
+          <div class="form-row cols-3">
+            <div class="form-group">
+              <label class="form-label">Instagram URL</label>
+              <input type="text" class="form-input" id="contact_ig" placeholder="#">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Behance URL</label>
+              <input type="text" class="form-input" id="contact_be" placeholder="#">
+            </div>
+            <div class="form-group">
+              <label class="form-label">LinkedIn URL</label>
+              <input type="text" class="form-input" id="contact_li" placeholder="#">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MARQUEE PANEL -->
+    <div class="panel" id="panel-marquee">
+      <div class="panel-header">
+        <div class="panel-title">Marquee Ticker</div>
+        <div class="panel-desc">The scrolling text strip between hero and about sections</div>
+      </div>
+      <div class="form-section">
+        <div class="form-section-header"><span class="form-section-title">Items (comma-separated)</span></div>
+        <div class="form-body">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Marquee Items</label>
+              <textarea class="form-input" id="marquee_items" rows="4" placeholder="Brand Identity, Editorial Design, Motion & Film, Digital Experience"></textarea>
+              <span class="form-hint">Separate each item with a comma</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SEO PANEL -->
+    <div class="panel" id="panel-seo">
+      <div class="panel-header">
+        <div class="panel-title">SEO & Meta</div>
+        <div class="panel-desc">Page title, description and footer copyright</div>
+      </div>
+      <div class="form-section">
+        <div class="form-section-header"><span class="form-section-title">Meta Tags</span></div>
+        <div class="form-body">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Page Title</label>
+              <input type="text" class="form-input" id="seo_title" placeholder="Frozen Paper — Studio">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Meta Description</label>
+              <textarea class="form-input" id="seo_desc" rows="2" placeholder="Frozen Paper is a brand and design studio..."></textarea>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Footer Copyright Text</label>
+              <input type="text" class="form-input" id="footer_copy" placeholder="© 2025 Frozen Paper Studio. All rights reserved.">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-title">Edit Item</div>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveModal()">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── DEFAULT DATA ─────────────────────────────────────────────────────────────
+const DEFAULTS = {
+  hero_line1: 'We engineer',
+  hero_line2: 'digital success',
+  hero_line3: 'that converts.',
+  hero_eyebrow: 'Digital Marketing & Content Creation Agency',
+  hero_desc: 'Frozen Paper blends data, creativity, and technology to build brands that stand out and scale fast — transforming brands into experiences that convert.',
+  hero_cta: 'Explore Our Work',
+  hero_cta_link: '#work',
+  about_h1: 'Strategy',
+  about_h2: 'meets',
+  about_h3: 'creativity.',
+  about_p1: "We are a full-service Digital Marketing & Content Creation Agency. We don't just market — we engineer digital success. With a deep understanding of market behavior and digital ecosystems, we craft strategies that don't just look good, but perform.",
+  about_p2: 'Helping businesses build a powerful online presence, generate qualified leads, increase conversions, and create meaningful brand connections that drive measurable growth.',
+  contact_h1: "Let's build",
+  contact_h2: 'something',
+  contact_h3: 'extraordinary.',
+  contact_email: 'hello@frozenpaper.studio',
+  contact_loc1: 'Thiruvananthapuram, Kerala',
+  contact_ig: '#',
+  contact_be: '#',
+  contact_li: '#',
+  marquee_items: 'Social Media Management, Performance Marketing, SEO & Optimization, CRM & Automation, Website Development, Email & WhatsApp Campaigns, Content Creation, Influencer Marketing, Photoshoots & Videography',
+  seo_title: 'Frozen Paper — Digital Marketing & Content Creation Agency',
+  seo_desc: 'Frozen Paper is a full-service digital marketing and content creation agency helping businesses build powerful online presence, generate leads, and scale fast.',
+  footer_copy: '© 2025 Frozen Paper. All rights reserved.',
+  stats: [
+    {num:'200+', label:'Campaigns Delivered'},
+    {num:'5yr',  label:'Years of Expertise'},
+    {num:'80+',  label:'Brands Grown'},
+    {num:'98%',  label:'Client Retention'},
+  ],
+  services: [
+    {title:'Social Media Management', desc:'Build a strong and consistent brand presence across all platforms with strategy-led content and community management.', tags:'Strategy, Content, Scheduling'},
+    {title:'Performance Marketing', desc:'Data-driven campaigns that maximize ROI and drive measurable, scalable results across all paid channels.', tags:'Paid Ads, ROI, Analytics'},
+    {title:'SEO & Optimization', desc:'Improve visibility, rank higher, and attract organic traffic that converts into real business growth.', tags:'SEO, Technical, Content'},
+    {title:'CRM & Marketing Automation', desc:'Streamline customer journeys with smart automation and personalized experiences that nurture and convert.', tags:'CRM, Automation, Flows'},
+    {title:'Website Development', desc:'Design, develop, and maintain high-performing websites that convert visitors into loyal customers.', tags:'Design, Dev, Conversion'},
+    {title:'Content Creation', desc:'From ideas to execution — content that tells your story, builds trust, and sells your brand across every platform.', tags:'Copy, Design, Video'},
+  ],
+  work: [
+    {title:'Brand Launch Campaign', category:'Performance Marketing', year:'2025', size:'tall', image:''},
+    {title:'Social Media Overhaul', category:'Social Media Management', year:'2025', size:'tall', image:''},
+    {title:'E-Commerce Growth Drive', category:'SEO & Paid Ads', year:'2024', size:'wide', image:''},
+    {title:'Influencer Strategy', category:'Influencer Marketing', year:'2024', size:'square', image:''},
+    {title:'Product Videography', category:'Photoshoots & Videography', year:'2024', size:'square', image:''},
+  ],
+  clients: [
+    {name:'RetailMax', industry:'E-Commerce & Retail', work:'Full performance marketing setup, SEO overhaul, and social media management resulting in 3x lead growth in 6 months.', year:'2025'},
+    {name:'MedCore Clinics', industry:'Healthcare', work:'CRM automation, WhatsApp campaign strategy, and content creation driving a 60% increase in appointment bookings.', year:'2025'},
+    {name:'EduPath', industry:'EdTech', work:'Influencer marketing campaign and content strategy that grew their social following from 2K to 45K in 90 days.', year:'2024'},
+    {name:'LuxeHome', industry:'Interior Design', work:'Brand photoshoots, videography, and Instagram management building a premium digital presence from scratch.', year:'2024'},
+    {name:'FinEdge', industry:'Finance & Fintech', work:'Email, SMS & WhatsApp campaign sequences with market research and lead generation delivering 40% conversion uplift.', year:'2024'},
+    {name:'GreenRoots', industry:'Sustainability & FMCG', work:'End-to-end digital marketing including website development, SEO, and paid ads driving consistent organic growth.', year:'2023'},
+  ],
+  testimonials: [
+    {quote:"Frozen Paper didn't just run our ads — they built us a scalable growth system. Our leads tripled in 3 months and the quality of inquiries improved dramatically.", name:'Arjun Menon', role:'CEO, RetailMax'},
+    {quote:"Their content strategy completely transformed our social presence. From near zero to 45K followers in 90 days — the results speak for themselves.", name:'Priya Nair', role:'Founder, EduPath'},
+  ]
+};
+
+// ─── STATE ────────────────────────────────────────────────────────────────────
+let DATA = {};
+let currentModal = { type: null, index: null };
+
+function loadData() {
+  const saved = localStorage.getItem('fp_cms_data');
+  DATA = saved ? JSON.parse(saved) : JSON.parse(JSON.stringify(DEFAULTS));
+}
+
+function saveData() {
+  try {
+    localStorage.setItem('fp_cms_data', JSON.stringify(DATA));
+    const s = document.getElementById('saveStatus');
+    if (s) { s.classList.add('show'); setTimeout(() => s.classList.remove('show'), 2000); }
+  } catch(e) {
+    console.error('saveData error:', e);
+  }
+}
+
+function resetToDefaults() {
+  if (!confirm('Reset all content to defaults? This cannot be undone.')) return;
+  DATA = JSON.parse(JSON.stringify(DEFAULTS));
+  saveData();
+  populateAll();
+}
+
+// ─── NAVIGATION ───────────────────────────────────────────────────────────────
+function showPanel(id) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('panel-' + id).classList.add('active');
+  document.getElementById('nav-' + id).classList.add('active');
+}
+
+// ─── POPULATE PANELS ──────────────────────────────────────────────────────────
+function populateAll() {
+  populateSimpleFields();
+  populateStats();
+  populateList('services');
+  populateList('work');
+  populateList('clients');
+  populateList('testimonials');
+  updateBadges();
+}
+
+function populateSimpleFields() {
+  const simpleKeys = [
+    'hero_line1','hero_line2','hero_line3','hero_eyebrow','hero_desc','hero_cta','hero_cta_link',
+    'about_h1','about_h2','about_h3','about_p1','about_p2',
+    'contact_h1','contact_h2','contact_h3','contact_email','contact_loc1','contact_ig','contact_be','contact_li',
+    'marquee_items','seo_title','seo_desc','footer_copy'
+  ];
+  simpleKeys.forEach(k => {
+    const el = document.getElementById(k);
+    if (el) el.value = DATA[k] || '';
+  });
+}
+
+function populateStats() {
+  const grid = document.getElementById('stats-grid');
+  grid.innerHTML = '';
+  (DATA.stats || []).forEach((s, i) => {
+    grid.innerHTML += `
+      <div class="form-group">
+        <label class="form-label">Stat ${i+1} — Number</label>
+        <input type="text" class="form-input" id="stat_num_${i}" value="${s.num}" placeholder="87+">
+        <label class="form-label" style="margin-top:8px">Label</label>
+        <input type="text" class="form-input" id="stat_label_${i}" value="${s.label}" placeholder="Projects Completed">
+      </div>`;
+  });
+}
+
+function populateList(type) {
+  const container = document.getElementById(type + '-list');
+  container.innerHTML = '';
+  (DATA[type] || []).forEach((item, i) => {
+    const name = item.title || item.name || item.quote?.substring(0,40)+'...';
+    const meta = item.category || item.industry || item.role || item.year || '';
+    container.innerHTML += `
+      <div class="card-item">
+        <span class="card-drag">⠿</span>
+        <span class="card-num">${String(i+1).padStart(2,'0')}</span>
+        <div class="card-info">
+          <div class="card-name">${name}</div>
+          ${meta ? `<div class="card-meta">${meta}</div>` : ''}
+        </div>
+        <div class="card-actions">
+          <button class="btn btn-sm" onclick="editItem('${type}', ${i})">Edit</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteItem('${type}', ${i})">✕</button>
+        </div>
+      </div>`;
+  });
+}
+
+function updateBadges() {
+  ['services','work','clients','testimonials'].forEach(t => {
+    const b = document.getElementById('badge-' + t);
+    if (b) b.textContent = (DATA[t] || []).length;
+  });
+}
+
+// ─── AUTO-SAVE SIMPLE FIELDS ─────────────────────────────────────────────────
+function bindAutoSave() {
+  document.querySelectorAll('.form-input').forEach(el => {
+    el.addEventListener('input', () => {
+      const k = el.id;
+      if (k && k in DATA) {
+        DATA[k] = el.value;
+        saveData();
+      }
+      // stats
+      const sm = k ? k.match(/^stat_(num|label)_(\d+)$/) : null;
+      if (sm) {
+        const idx = parseInt(sm[2]);
+        if (DATA.stats && DATA.stats[idx]) {
+          DATA.stats[idx][sm[1]] = el.value;
+          saveData();
+        }
+      }
+    });
+  });
+}
+
+// ─── MODAL SYSTEM ────────────────────────────────────────────────────────────
+function openModal(title, bodyHTML, type, index) {
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-body').innerHTML = bodyHTML;
+  document.getElementById('modal-overlay').classList.add('open');
+  currentModal = { type, index };
+}
+function handleImageUpload(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const dataUrl = e.target.result;
+    document.getElementById('m_image').value = dataUrl;
+    const preview = document.getElementById('image-preview');
+    const wrap = document.getElementById('image-preview-wrap');
+    if (preview) { preview.src = dataUrl; preview.style.display = 'block'; wrap.style.display = 'block'; }
+  };
+  reader.readAsDataURL(file);
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('open');
+  currentModal = { type: null, index: null };
+}
+
+function saveModal() {
+  const { type, index } = currentModal;
+  if (!type) return;
+  const isNew = index === null;
+
+  if (type === 'services') {
+    const item = {
+      title: document.getElementById('m_title').value,
+      desc:  document.getElementById('m_desc').value,
+      tags:  document.getElementById('m_tags').value,
+    };
+    if (isNew) DATA.services.push(item);
+    else DATA.services[index] = item;
+  }
+  else if (type === 'work') {
+    const item = {
+      title:    document.getElementById('m_title').value,
+      category: document.getElementById('m_category').value,
+      year:     document.getElementById('m_year').value,
+      size:     document.getElementById('m_size').value,
+      image:    document.getElementById('m_image').value,
+    };
+    if (isNew) DATA.work.push(item);
+    else DATA.work[index] = item;
+  }
+  else if (type === 'clients') {
+    const item = {
+      name:     document.getElementById('m_name').value,
+      industry: document.getElementById('m_industry').value,
+      work:     document.getElementById('m_work').value,
+      year:     document.getElementById('m_year').value,
+    };
+    if (isNew) DATA.clients.push(item);
+    else DATA.clients[index] = item;
+  }
+  else if (type === 'testimonials') {
+    const item = {
+      quote: document.getElementById('m_quote').value,
+      name:  document.getElementById('m_name').value,
+      role:  document.getElementById('m_role').value,
+    };
+    if (isNew) DATA.testimonials.push(item);
+    else DATA.testimonials[index] = item;
+  }
+
+  saveData();
+  populateList(type);
+  updateBadges();
+  closeModal();
+}
+
+function deleteItem(type, index) {
+  if (!confirm('Delete this item?')) return;
+  DATA[type].splice(index, 1);
+  saveData();
+  populateList(type);
+  updateBadges();
+}
+
+// ─── EDIT FORMS ───────────────────────────────────────────────────────────────
+function serviceForm(s) {
+  return `
+    <div class="form-row"><div class="form-group">
+      <label class="form-label">Service Title</label>
+      <input type="text" class="form-input" id="m_title" value="${s?.title||''}">
+    </div></div>
+    <div class="form-row"><div class="form-group">
+      <label class="form-label">Description</label>
+      <textarea class="form-input" id="m_desc" rows="3">${s?.desc||''}</textarea>
+    </div></div>
+    <div class="form-row"><div class="form-group">
+      <label class="form-label">Tags (comma-separated)</label>
+      <input type="text" class="form-input" id="m_tags" value="${s?.tags||''}">
+    </div></div>`;
+}
+
+function workForm(w) {
+  const sizeOpts = ['tall','wide','square'].map(o =>
+    `<option value="${o}" ${w?.size===o?'selected':''}>${o}</option>`).join('');
+  return `
+    <div class="form-row"><div class="form-group">
+      <label class="form-label">Project Title</label>
+      <input type="text" class="form-input" id="m_title" value="${w?.title||''}">
+    </div></div>
+    <div class="form-row cols-2">
+      <div class="form-group">
+        <label class="form-label">Category</label>
+        <input type="text" class="form-input" id="m_category" value="${w?.category||''}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Year</label>
+        <input type="text" class="form-input" id="m_year" value="${w?.year||'2024'}">
+      </div>
+    </div>
+    <div class="form-row"><div class="form-group">
+      <label class="form-label">Card Size</label>
+      <select class="form-input" id="m_size">${sizeOpts}</select>
+      <span class="form-hint">tall = portrait, wide = landscape, square = 1:1</span>
+    </div></div>
+    <div class="form-row"><div class="form-group">
+      <label class="form-label">Project Image</label>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="display:flex;gap:10px;align-items:center">
+          <input type="text" class="form-input" id="m_image" value="${w?.image||''}" placeholder="Paste image URL or upload below" style="flex:1">
+        </div>
+        <label style="display:flex;align-items:center;gap:10px;background:var(--surface3);border:1px dashed var(--border2);padding:14px 16px;border-radius:2px;cursor:pointer;transition:border-color .2s" id="upload-label">
+          <span style="font-size:20px">📁</span>
+          <div>
+            <div style="font-size:13px;color:var(--fg);font-weight:400">Upload image from your computer</div>
+            <div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:2px">JPG, PNG, WEBP supported — will be converted to base64</div>
+          </div>
+          <input type="file" id="m_image_file" accept="image/*" style="display:none" onchange="handleImageUpload(this)">
+        </label>
+        <div id="image-preview-wrap" style="display:${w?.image?'block':'none'}">
+          <img id="image-preview" src="${w?.image||''}" style="width:100%;max-height:200px;object-fit:cover;border:1px solid var(--border);border-radius:2px;display:${w?.image?'block':'none'}">
+        </div>
+      </div>
+      <span class="form-hint">Upload directly OR paste a URL from Google Drive, Dropbox, or any image host</span>
+    </div></div>`;
+}
+
+function clientForm(c) {
+  return `
+    <div class="form-row"><div class="form-group">
+      <label class="form-label">Client Name</label>
+      <input type="text" class="form-input" id="m_name" value="${c?.name||''}">
+    </div></div>
+    <div class="form-row cols-2">
+      <div class="form-group">
+        <label class="form-label">Industry</label>
+        <input type="text" class="form-input" id="m_industry" value="${c?.industry||''}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Year</label>
+        <input type="text" class="form-input" id="m_year" value="${c?.year||'2024'}">
+      </div>
+    </div>
+    <div class="form-row"><div class="form-group">
+      <label class="form-label">Work Description</label>
+      <textarea class="form-input" id="m_work" rows="3">${c?.work||''}</textarea>
+    </div></div>`;
+}
+
+function testimonialForm(t) {
+  return `
+    <div class="form-row"><div class="form-group">
+      <label class="form-label">Quote</label>
+      <textarea class="form-input" id="m_quote" rows="4">${t?.quote||''}</textarea>
+    </div></div>
+    <div class="form-row cols-2">
+      <div class="form-group">
+        <label class="form-label">Author Name</label>
+        <input type="text" class="form-input" id="m_name" value="${t?.name||''}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Role / Company</label>
+        <input type="text" class="form-input" id="m_role" value="${t?.role||''}">
+      </div>
+    </div>`;
+}
+
+function editItem(type, index) {
+  const item = DATA[type][index];
+  const forms = { services: serviceForm, work: workForm, clients: clientForm, testimonials: testimonialForm };
+  const titles = { services: 'Edit Service', work: 'Edit Project', clients: 'Edit Client', testimonials: 'Edit Testimonial' };
+  openModal(titles[type], forms[type](item), type, index);
+}
+
+function addService()     { openModal('Add Service',     serviceForm(),     'services',     null); }
+function addWork()        { openModal('Add Project',     workForm(),        'work',         null); }
+function addClient()      { openModal('Add Client',      clientForm(),      'clients',      null); }
+function addTestimonial() { openModal('Add Testimonial', testimonialForm(), 'testimonials', null); }
+
+// ─── SAVE ALL ─────────────────────────────────────────────────────────────────
+function saveAll() {
+  try {
+    // Collect ALL simple text fields
+    const simpleKeys = [
+      'hero_line1','hero_line2','hero_line3','hero_eyebrow','hero_desc','hero_cta','hero_cta_link',
+      'about_h1','about_h2','about_h3','about_p1','about_p2',
+      'contact_h1','contact_h2','contact_h3','contact_email','contact_loc1','contact_ig','contact_be','contact_li',
+      'marquee_items','seo_title','seo_desc','footer_copy'
+    ];
+    simpleKeys.forEach(k => {
+      const el = document.getElementById(k);
+      if (el) DATA[k] = el.value;
+    });
+    // Stats
+    (DATA.stats || []).forEach((s, i) => {
+      const n = document.getElementById('stat_num_' + i);
+      const l = document.getElementById('stat_label_' + i);
+      if (n) s.num = n.value;
+      if (l) s.label = l.value;
+    });
+    // Save to localStorage
+    localStorage.setItem('fp_cms_data', JSON.stringify(DATA));
+    // Show success toast
+    showToast('✓ All changes saved!', 'success');
+  } catch(e) {
+    showToast('✗ Save failed: ' + e.message, 'error');
+    console.error('Save error:', e);
+  }
+}
+
+function showToast(msg, type) {
+  // Remove existing toast
+  const existing = document.getElementById('fp-toast');
+  if (existing) existing.remove();
+  const toast = document.createElement('div');
+  toast.id = 'fp-toast';
+  toast.style.cssText = \`
+    position:fixed;bottom:32px;right:32px;z-index:9999;
+    background:\${type==='success'?'#1a2e1a':'#2e1a1a'};
+    border:1px solid \${type==='success'?'#2ecc71':'#e74c3c'};
+    color:\${type==='success'?'#2ecc71':'#e74c3c'};
+    font-family:'DM Mono',monospace;font-size:12px;letter-spacing:0.1em;
+    padding:14px 24px;border-radius:2px;
+    box-shadow:0 4px 24px rgba(0,0,0,0.4);
+    animation:toastIn .3s cubic-bezier(.25,.1,.25,1);
+  \`;
+  toast.textContent = msg;
+  document.body.appendChild(toast);
+  setTimeout(() => { toast.style.opacity='0'; toast.style.transition='opacity .3s'; setTimeout(()=>toast.remove(),300); }, 2500);
+}
+
+function openPreview() {
+  saveAll();
+  setTimeout(() => window.open('index.html', '_blank'), 300);
+}
+
+
+// ─── AUTH ─────────────────────────────────────────────────────────────────────
+const AUTH = { user: 'FEUGO', pass: 'FROZENPAPER.CO' };
+const SESSION_KEY = 'fp_cms_auth';
+
+function checkSession() {
+  const s = sessionStorage.getItem(SESSION_KEY);
+  if (s === 'authenticated') {
+    document.getElementById('login-screen').style.display = 'none';
+  }
+}
+
+function attemptLogin() {
+  const u = document.getElementById('login-user').value.trim();
+  const p = document.getElementById('login-pass').value.trim();
+  const box = document.querySelector('.login-box');
+  const err = document.getElementById('login-error');
+
+  if (u === AUTH.user && p === AUTH.pass) {
+    sessionStorage.setItem(SESSION_KEY, 'authenticated');
+    // Fade out login screen
+    const screen = document.getElementById('login-screen');
+    screen.style.transition = 'opacity .5s';
+    screen.style.opacity = '0';
+    setTimeout(() => { screen.style.display = 'none'; }, 500);
+  } else {
+    err.classList.add('show');
+    box.classList.remove('shake');
+    void box.offsetWidth; // reflow to restart animation
+    box.classList.add('shake');
+    document.getElementById('login-pass').value = '';
+    setTimeout(() => err.classList.remove('show'), 3000);
+  }
+}
+
+// Allow pressing Enter to submit
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') {
+    const screen = document.getElementById('login-screen');
+    if (screen && screen.style.display !== 'none') {
+      attemptLogin();
+    }
+  }
+});
+
+checkSession();
+
+// ─── INIT ────────────────────────────────────────────────────────────────────
+loadData();
+populateAll();
+bindAutoSave();
+document.getElementById('modal-overlay').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+</script>
+</body>
+</html>
